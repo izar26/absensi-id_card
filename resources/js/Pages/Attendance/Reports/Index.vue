@@ -80,7 +80,6 @@ const updateStatus = (studentId, newStatus) => {
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-    <!-- 1. Lakukan loop pada 'reportData.data' -->
     <tr v-for="(item, index) in reportData.data" :key="item.id">
         <td class="px-6 py-4">{{ index + 1 }}</td>
         <td class="px-6 py-4">{{ item.name }}</td>
@@ -106,7 +105,6 @@ const updateStatus = (studentId, newStatus) => {
         </td>
         <td class="px-6 py-4">{{ item.scan_time }}</td>
     </tr>
-    <!-- 2. Periksa panjang dari 'reportData.data' -->
     <tr v-if="reportData.data.length === 0">
         <td colspan="5" class="text-center py-4">Tidak ada data absensi untuk tanggal yang dipilih.</td>
     </tr>
