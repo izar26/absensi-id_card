@@ -80,7 +80,7 @@ const updateStatus = (studentId, newStatus) => {
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-    <tr v-for="(item, index) in reportData.data" :key="item.id">
+    <tr v-for="(item, index) in reportData?.data || []" :key="item?.id || index">
         <td class="px-6 py-4">{{ index + 1 }}</td>
         <td class="px-6 py-4">{{ item.name }}</td>
         <td class="px-6 py-4">{{ item.class }}</td>

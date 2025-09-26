@@ -60,31 +60,31 @@ public function index(Request $request)
     }
 
     public function updateStatus(Request $request)
-    {
-        // 1. Validasi data yang masuk
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'date' => 'required|date',
-            'status' => 'required|string|in:Hadir,Terlambat,Izin,Sakit,Alfa',
+{
+    $request->validate([
+        'student_id' => 'required|exists:students,id',
+        'date' => 'required|date',
+        'status' => 'required|string|in:Hadir,Terlambat,Izin,Sakit,Alfa',
+    ]);
+
+    $attendance = Attendance::where('student_id', $request->student_id)
+        ->whereDate('created_at', $request->date)
+        ->first();
+
+    if ($attendance) {
+        $attendance->update([
+            'status' => $request->status,
         ]);
-
-        // 2. Gunakan updateOrCreate untuk efisiensi
-        // - Cari record berdasarkan student_id dan tanggal.
-        // - Jika ditemukan, update statusnya.
-        // - Jika tidak ditemukan (awalnya Alfa), buat record baru dengan status tersebut.
-        Attendance::updateOrCreate(
-            [
-                'student_id' => $request->student_id,
-                // Mencocokkan hanya berdasarkan tanggal, tanpa memperhatikan waktu
-                'created_at' => Carbon::parse($request->date)->startOfDay()
-            ],
-            [
-                'status' => $request->status,
-            ]
-        );
-
-        // 3. Kembalikan ke halaman laporan dengan pesan sukses
-        return to_route('reports.attendance.index', ['date' => $request->date])
-            ->with('message', 'Status berhasil diperbarui.');
+    } else {
+        Attendance::create([
+            'student_id' => $request->student_id,
+            'status' => $request->status,
+            'created_at' => Carbon::parse($request->date)->startOfDay(),
+        ]);
     }
+
+    return to_route('reports.attendance.index', ['date' => $request->date])
+        ->with('message', 'Status berhasil diperbarui.');
+}
+
 }
