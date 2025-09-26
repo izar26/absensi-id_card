@@ -19,17 +19,17 @@ public function index(Request $request)
         $filterDate = $request->input('date', Carbon::today()->toDateString());
         
         // 2. Lakukan query ke siswa dengan paginasi dan search
-        $students = Student::query()
+        $paginatedStudents = Student::query()
             ->when($request->input('search'), function ($query, $search) {
                 $query->where('name', 'like', "%{$search}%")
                       ->orWhere('nis', 'like', "%{$search}%");
             })
             ->orderBy('name')
-            ->paginate(15) // Kita tampilkan 15 siswa per halaman
+            ->paginate(15)
             ->withQueryString();
 
         // 3. Ambil ID siswa HANYA dari halaman saat ini
-        $studentIdsOnCurrentPage = $students->pluck('id');
+        $studentIdsOnCurrentPage = $paginatedStudents->pluck('id');
 
         // 4. Ambil data absensi HANYA untuk siswa di halaman ini dan pada tanggal yang dipilih
         $attendances = Attendance::whereIn('student_id', $studentIdsOnCurrentPage)
@@ -37,25 +37,23 @@ public function index(Request $request)
                                 ->get()
                                 ->keyBy('student_id');
 
-        // 5. Gabungkan data (sekarang dilakukan pada hasil paginasi)
-        $paginatedStudents = $students; // Ganti nama variabel agar lebih jelas
-
-$reportData = $paginatedStudents->setCollection(
-    $paginatedStudents->getCollection()->map(function ($student) use ($attendances) {
-        $attendanceRecord = $attendances->get($student->id);
-        return [
-            'id' => $student->id,
-            'name' => $student->name,
-            'class' => $student->class,
-            'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
-            'scan_time' => $attendanceRecord ? \Carbon\Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
-        ];
-    })
-);
+        // 5. Gabungkan data dengan cara yang lebih aman untuk konsistensi
+        $reportData = $paginatedStudents->setCollection(
+            $paginatedStudents->getCollection()->map(function ($student) use ($attendances) {
+                $attendanceRecord = $attendances->get($student->id);
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'class' => $student->class,
+                    'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
+                    'scan_time' => $attendanceRecord ? Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
+                ];
+            })
+        );
 
         // 6. Kirim data ke Vue
         return Inertia::render('Attendance/Reports/Index', [
-            'reportData' => $reportData, // Ini sekarang adalah objek paginator
+            'reportData' => $reportData,
             'filterDate' => $filterDate,
             'filters' => $request->only(['search']),
         ]);
