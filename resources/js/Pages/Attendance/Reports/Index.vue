@@ -80,35 +80,37 @@ const updateStatus = (studentId, newStatus) => {
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="(item, index) in reportData" :key="item.id">
-                                        <td class="px-6 py-4">{{ index + 1 }}</td>
-                                        <td class="px-6 py-4">{{ item.name }}</td>
-                                        <td class="px-6 py-4">{{ item.class }}</td>
-                                        <td class="px-6 py-4">
-    <div class="flex items-center gap-1">
-        <button
-            v-for="status in statuses"
-            :key="status"
-            @click="updateStatus(item.id, status)"
-            class="px-2 py-1 text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            :class="{
-                'bg-green-500 text-white': item.status === status && status === 'Hadir',
-                'bg-blue-500 text-white': item.status === status && status === 'Sakit',
-                'bg-yellow-500 text-white': item.status === status && status === 'Izin',
-                'bg-red-500 text-white': item.status === status && status === 'Alfa',
-                'bg-gray-200 text-gray-600 hover:bg-gray-300': item.status !== status,
-            }"
-        >
-            {{ status }}
-        </button>
-    </div>
-</td>
-                                        <td class="px-6 py-4">{{ item.scan_time }}</td>
-                                    </tr>
-                                    <tr v-if="reportData.length === 0">
-                                        <td colspan="5" class="text-center py-4">Tidak ada data absensi untuk tanggal yang dipilih.</td>
-                                    </tr>
-                                </tbody>
+    <!-- 1. Lakukan loop pada 'reportData.data' -->
+    <tr v-for="(item, index) in reportData.data" :key="item.id">
+        <td class="px-6 py-4">{{ index + 1 }}</td>
+        <td class="px-6 py-4">{{ item.name }}</td>
+        <td class="px-6 py-4">{{ item.class }}</td>
+        <td class="px-6 py-4">
+            <div class="flex items-center justify-center gap-1">
+                <button
+                    v-for="status in statuses"
+                    :key="status"
+                    @click="updateStatus(item.id, status)"
+                    class="px-2 py-1 text-xs rounded-md focus:outline-none"
+                    :class="{
+                        'bg-green-500 text-white': item.status === status && status === 'Hadir',
+                        'bg-blue-500 text-white': item.status === status && status === 'Sakit',
+                        'bg-yellow-500 text-white': item.status === status && status === 'Izin',
+                        'bg-red-500 text-white': item.status === status && status === 'Alfa',
+                        'bg-gray-200 text-gray-600 hover:bg-gray-300': item.status !== status,
+                    }"
+                >
+                    {{ status }}
+                </button>
+            </div>
+        </td>
+        <td class="px-6 py-4">{{ item.scan_time }}</td>
+    </tr>
+    <!-- 2. Periksa panjang dari 'reportData.data' -->
+    <tr v-if="reportData.data.length === 0">
+        <td colspan="5" class="text-center py-4">Tidak ada data absensi untuk tanggal yang dipilih.</td>
+    </tr>
+</tbody>
                             </table>
                         </div>
                         <div class="mt-6">
