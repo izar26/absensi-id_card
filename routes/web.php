@@ -4,7 +4,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Models\Student;
-use App\Http\Controllers\Api\StudentController as ApiStudentController;
 use App\Http\Controllers\IdCardController;
 use App\Http\Controllers\AttendanceSessionController;
 use App\Http\Controllers\AttendanceReportController;
@@ -25,8 +24,8 @@ Route::get('/reports/attendance', [AttendanceReportController::class, 'index'])
     ->name('reports.attendance.index')
     ->middleware(['auth', 'verified']);
 Route::resource('sessions', AttendanceSessionController::class)->middleware(['auth', 'verified']);
-Route::put('/students/{student}', [ApiStudentController::class, 'update'])->name('students.update')->middleware('auth');
-Route::delete('/students/{student}', [ApiStudentController::class, 'destroy'])->name('students.destroy')->middleware('auth');
+Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update')->middleware('auth');
+Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy')->middleware('auth');
 // RUTE INI KHUSUS UNTUK MEMANGGIL CONTROLLER PDF
 Route::get('/students/{student}/id-card', [IdCardController::class, 'generateIdCard'])
     ->name('students.idcard')
