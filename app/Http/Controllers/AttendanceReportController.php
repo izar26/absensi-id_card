@@ -38,16 +38,20 @@ public function index(Request $request)
                                 ->keyBy('student_id');
 
         // 5. Gabungkan data (sekarang dilakukan pada hasil paginasi)
-        $reportData = $students->through(function ($student) use ($attendances) {
-            $attendanceRecord = $attendances->get($student->id);
-            return [
-                'id' => $student->id,
-                'name' => $student->name,
-                'class' => $student->class,
-                'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
-                'scan_time' => $attendanceRecord ? Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
-            ];
-        });
+        $paginatedStudents = $students; // Ganti nama variabel agar lebih jelas
+
+$reportData = $paginatedStudents->setCollection(
+    $paginatedStudents->getCollection()->map(function ($student) use ($attendances) {
+        $attendanceRecord = $attendances->get($student->id);
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'class' => $student->class,
+            'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
+            'scan_time' => $attendanceRecord ? \Carbon\Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
+        ];
+    })
+);
 
         // 6. Kirim data ke Vue
         return Inertia::render('Attendance/Reports/Index', [
