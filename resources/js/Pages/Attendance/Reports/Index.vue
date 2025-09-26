@@ -13,6 +13,7 @@ const props = defineProps({
 
 const date = ref(props.filterDate);
 const search = ref(props.filters.search || ''); // <-- State untuk search
+const statuses = ['Hadir', 'Sakit', 'Izin', 'Alfa'];
 
 // Watcher untuk filter tanggal dan search
 watch([date, search], debounce(([newDate, newSearch]) => {
@@ -83,19 +84,24 @@ const updateStatus = (studentId, newStatus) => {
                                         <td class="px-6 py-4">{{ index + 1 }}</td>
                                         <td class="px-6 py-4">{{ item.name }}</td>
                                         <td class="px-6 py-4">{{ item.class }}</td>
-                                        <td class="px-6 py-4 text-center">
-    <select 
-        :value="item.status" 
-        @change="updateStatus(item.id, $event.target.value)"
-        class="border-gray-300 rounded-md shadow-sm text-xs"
-        :class="statusClass(item.status)"
-    >
-        <option value="Hadir">Hadir</option>
-        <option value="Terlambat">Terlambat</option>
-        <option value="Izin">Izin</option>
-        <option value="Sakit">Sakit</option>
-        <option value="Alfa">Alfa</option>
-    </select>
+                                        <td class="px-6 py-4">
+    <div class="flex items-center gap-1">
+        <button
+            v-for="status in statuses"
+            :key="status"
+            @click="updateStatus(item.id, status)"
+            class="px-2 py-1 text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            :class="{
+                'bg-green-500 text-white': item.status === status && status === 'Hadir',
+                'bg-blue-500 text-white': item.status === status && status === 'Sakit',
+                'bg-yellow-500 text-white': item.status === status && status === 'Izin',
+                'bg-red-500 text-white': item.status === status && status === 'Alfa',
+                'bg-gray-200 text-gray-600 hover:bg-gray-300': item.status !== status,
+            }"
+        >
+            {{ status }}
+        </button>
+    </div>
 </td>
                                         <td class="px-6 py-4">{{ item.scan_time }}</td>
                                     </tr>
