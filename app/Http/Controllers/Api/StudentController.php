@@ -112,4 +112,43 @@ class StudentController extends Controller
 
         return to_route('students.page')->with('message', 'Siswa berhasil dihapus.');
     }
+
+    public function sync(Request $request)
+    {
+        // 1. Validasi data yang masuk, sesuaikan dengan nama field dari Dapodik
+        $request->validate([
+            '*.peserta_didik_id' => 'required',
+            '*.nama' => 'required|string',
+            '*.nisn' => 'nullable|string',
+            '*.nama_rombel' => 'required|string',
+        ]);
+
+        $syncedCount = 0;
+        $dataFromDapodik = $request->all();
+
+        // 2. Loop melalui setiap data siswa yang dikirim
+        foreach ($dataFromDapodik as $siswaDapodik) {
+            
+            // Lanjutkan hanya jika NISN tidak kosong
+            if (!empty($siswaDapodik['nisn'])) {
+                Student::updateOrCreate(
+                    [
+                        'nis' => $siswaDapodik['nisn'] // Kunci unik untuk mencari
+                    ],
+                    [
+                        'name' => $siswaDapodik['nama'], // Data yang akan di-update atau dibuat
+                        'class' => $siswaDapodik['nama_rombel'],
+                    ]
+                );
+                $syncedCount++;
+            }
+        }
+
+        // 4. Kembalikan respons sukses
+        return response()->json([
+            'message' => 'Sinkronisasi berhasil.',
+            'total_data_diterima' => count($dataFromDapodik),
+            'total_data_disinkronkan' => $syncedCount,
+        ]);
+    }
 }

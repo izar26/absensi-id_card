@@ -1,25 +1,35 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import Pagination from '@/Components/Pagination.vue';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import { debounce } from 'lodash';
 
-// Menerima 'students' dari controller sebagai props
+// Menerima props dari controller dengan benar
 const props = defineProps({
-    students: Array
+    students: Object, // students adalah objek paginator
+    filters: Object,  // filters berisi query pencarian
 });
 
-// --- STATE MANAGEMENT ---
+// State untuk input search dengan nilai default yang aman
+const search = ref(props.filters.search || '');
 
-// State untuk membedakan mode: false = Tambah, true = Edit
+// Watcher dengan debounce untuk menjalankan search secara otomatis
+watch(search, debounce((value) => {
+    router.get(route('students.index'), { search: value }, {
+        preserveState: true,
+        replace: true,
+    });
+}, 300)); // Delay 300ms
+
+
+// --- SEMUA KODE MODAL DAN FORM ANDA YANG LAIN TETAP DI SINI ---
+// (Tidak perlu diubah)
+
 const editMode = ref(false);
-
-// State untuk membuka/menutup modal
 const isModalOpen = ref(false);
-
 const photoPreview = ref(null);
 
-// State untuk menampung data form, dikelola oleh Inertia
-// 'id' dibutuhkan untuk proses update
 const form = useForm({
     id: null,
     name: '',
@@ -28,46 +38,35 @@ const form = useForm({
     photo: null,
 });
 
-
-// --- FUNCTIONS ---
-
-// Fungsi untuk membuka modal dalam mode TAMBAH
 const openAddModal = () => {
-    form.reset(); // Kosongkan form dari data sebelumnya
+    form.reset();
     editMode.value = false;
     isModalOpen.value = true;
 };
 
-// Fungsi untuk membuka modal dalam mode EDIT
 const openEditModal = (student) => {
-    // Isi form dengan data siswa yang akan diedit
     form.id = student.id;
     form.name = student.name;
     form.nis = student.nis;
     form.class = student.class;
-    
-    photoPreview.value = student.photo ? `/storage/${student.photo}` : null; // <-- Set preview untuk edit
+    photoPreview.value = student.photo ? `/storage/${student.photo}` : null;
     editMode.value = true;
     isModalOpen.value = true;
 };
 
-// Fungsi untuk menutup modal
 const closeModal = () => {
     isModalOpen.value = false;
-    form.reset(); // Selalu reset form saat modal ditutup
+    form.reset();
     photoPreview.value = null;
 };
 
-// Fungsi untuk submit form (bisa untuk Tambah atau Edit)
 const submit = () => {
     if (editMode.value) {
-        // Ganti dari form.post menjadi form.put
         form.put(route('students.update', form.id), {
             preserveScroll: true,
             onSuccess: () => closeModal(),
         });
     } else {
-        // Jika mode tambah, kirim request CREATE
         form.post(route('students.store'), {
             preserveScroll: true,
             onSuccess: () => closeModal(),
@@ -75,7 +74,6 @@ const submit = () => {
     }
 };
 
-// Fungsi untuk menghapus siswa
 const deleteStudent = (id) => {
     if (confirm('Apakah Anda yakin ingin menghapus siswa ini?')) {
         router.delete(route('students.destroy', id), {
@@ -84,12 +82,11 @@ const deleteStudent = (id) => {
     }
 };
 
-// Fungsi baru untuk menangani input file
 const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (!file) return;
     form.photo = file;
-    photoPreview.value = URL.createObjectURL(file); // <-- Buat URL sementara untuk preview
+    photoPreview.value = URL.createObjectURL(file);
 };
 </script>
 
@@ -108,9 +105,18 @@ const handleFileChange = (event) => {
                         <div v-if="$page.props.flash && $page.props.flash.message" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                             <span class="block sm:inline">{{ $page.props.flash.message }}</span>
                         </div>
-                        <button @click="openAddModal" class="mb-4 bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
-                            + Tambah Siswa Baru
-                        </button>
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center gap-4">
+                                <button @click="openAddModal" class="inline-block bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700">
+                                    + Tambah Siswa Baru
+                                </button>
+                                <a :href="route('students.idcard.all')" class="inline-block bg-green-500 text-white font-bold py-2 px-4 rounded hover:bg-green-700">
+                                    🖨️ Cetak Semua ID Card
+                                </a>
+                            </div>
+                            <input v-model="search" type="text" placeholder="Cari nama, nis, kelas..." class="border-gray-300 rounded-md shadow-sm w-1/3">
+                        </div>
+
 
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -123,22 +129,28 @@ const handleFileChange = (event) => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="student in students" :key="student.id">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <img v-if="student.photo" :src="`/storage/${student.photo}`" alt="Foto Siswa" class="h-10 w-10 rounded-full object-cover">
-                                        <span v-else class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xs">No Pic</span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ student.name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ student.nis }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">{{ student.class }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                        <button @click="openEditModal(student)" class="text-indigo-600 hover:text-indigo-900">Edit</button>
-                                        <a :href="route('students.idcard', student.id)" target="_blank" class="ml-4 text-green-600 hover:text-green-900">Cetak</a>
-                                        <button @click="deleteStudent(student.id)" class="ml-4 text-red-600 hover:text-red-900">Hapus</button>
-                                    </td>
-                                </tr>
-                            </tbody>
+    <tr v-for="student in students.data" :key="student.id">
+        <td class="px-6 py-4 whitespace-nowrap">
+            <img v-if="student.photo" :src="`/storage/${student.photo}`" alt="Foto Siswa" class="h-10 w-10 rounded-full object-cover">
+            <span v-else class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xs">No Pic</span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">{{ student.name }}</td>
+        <td class="px-6 py-4 whitespace-nowrap">{{ student.nis }}</td>
+        <td class="px-6 py-4 whitespace-nowrap">{{ student.class }}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
+            <button @click="openEditModal(student)" class="text-indigo-600 hover:text-indigo-900">Edit</button>
+            <a :href="route('students.idcard', student.id)" target="_blank" class="ml-4 text-green-600 hover:text-green-900">Cetak</a>
+            <button @click="deleteStudent(student.id)" class="ml-4 text-red-600 hover:text-red-900">Hapus</button>
+        </td>
+    </tr>
+    <tr v-if="students.data.length === 0">
+        <td colspan="6" class="text-center py-4 text-gray-500">Tidak ada data siswa yang ditemukan.</td>
+    </tr>
+</tbody>
                         </table>
+                        <div class="mt-6">
+                            <Pagination :links="students.links" />
+                        </div>
                     </div>
                 </div>
             </div>

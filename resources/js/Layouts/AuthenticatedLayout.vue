@@ -37,9 +37,21 @@ const showingNavigationDropdown = ref(false);
         Dashboard
     </NavLink>
     
-    <NavLink :href="route('students.page')" :active="route().current('students.page')">
-        Manajemen Siswa
+    <NavLink :href="route('students.index')" :active="route().current('students.index')">
+    Manajemen Siswa
+</NavLink>
+    <NavLink :href="route('attendance.scan')" :active="route().current('attendance.scan')">
+        Scan Absensi
     </NavLink>
+    <NavLink :href="route('sessions.index')" :active="route().current('sessions.index')">
+    Manajemen Sesi
+</NavLink>
+<NavLink :href="route('reports.attendance.index')" :active="route().current('reports.attendance.index')">
+    Laporan Absensi
+</NavLink>
+<NavLink :href="route('exceptions.index')" :active="route().current('exceptions.index')">
+    Pengecualian
+</NavLink>
                             </div>
                         </div>
 
@@ -145,9 +157,21 @@ const showingNavigationDropdown = ref(false);
             Dashboard
         </ResponsiveNavLink>
         
-        <ResponsiveNavLink :href="route('students.page')" :active="route().current('students.page')">
-            Manajemen Siswa
+        <ResponsiveNavLink :href="route('students.index')" :active="route().current('students.index')">
+    Manajemen Siswa
+</ResponsiveNavLink>
+        <ResponsiveNavLink :href="route('attendance.scan')" :active="route().current('attendance.scan')">
+            Scan Absensi
         </ResponsiveNavLink>
+        <ResponsiveNavLink :href="route('sessions.index')" :active="route().current('sessions.index')">
+    Manajemen Sesi
+</ResponsiveNavLink>
+<ResponsiveNavLink :href="route('reports.attendance.index')" :active="route().current('reports.attendance.index')">
+    Laporan Absensi
+</ResponsiveNavLink>
+<ResponsiveNavLink :href="route('exceptions.index')" :active="route().current('exceptions.index')">
+    Pengecualian
+</ResponsiveNavLink>
                     </div>
 
                     <!-- Responsive Settings Options -->
