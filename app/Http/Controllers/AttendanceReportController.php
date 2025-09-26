@@ -13,37 +13,47 @@ class AttendanceReportController extends Controller
     /**
      * Menampilkan halaman laporan absensi.
      */
-    public function index(Request $request)
+public function index(Request $request)
     {
-        // 1. Ambil tanggal dari filter, jika tidak ada, gunakan tanggal hari ini
+        // 1. Ambil filter tanggal dan search
         $filterDate = $request->input('date', Carbon::today()->toDateString());
+        
+        // 2. Lakukan query ke siswa dengan paginasi dan search
+        $students = Student::query()
+            ->when($request->input('search'), function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('nis', 'like', "%{$search}%");
+            })
+            ->orderBy('name')
+            ->paginate(15) // Kita tampilkan 15 siswa per halaman
+            ->withQueryString();
 
-        // 2. Ambil semua siswa, urutkan berdasarkan nama
-        $students = Student::orderBy('name')->get();
+        // 3. Ambil ID siswa HANYA dari halaman saat ini
+        $studentIdsOnCurrentPage = $students->pluck('id');
 
-        // 3. Ambil data absensi HANYA untuk tanggal yang dipilih
-        // Gunakan keyBy('student_id') agar mudah dicari
-        $attendances = Attendance::whereDate('created_at', $filterDate)
+        // 4. Ambil data absensi HANYA untuk siswa di halaman ini dan pada tanggal yang dipilih
+        $attendances = Attendance::whereIn('student_id', $studentIdsOnCurrentPage)
+                                ->whereDate('created_at', $filterDate)
                                 ->get()
                                 ->keyBy('student_id');
 
-        // 4. Gabungkan data siswa dengan data absensi
-        $reportData = $students->map(function ($student) use ($attendances) {
+        // 5. Gabungkan data (sekarang dilakukan pada hasil paginasi)
+        $reportData = $students->through(function ($student) use ($attendances) {
             $attendanceRecord = $attendances->get($student->id);
-
             return [
                 'id' => $student->id,
                 'name' => $student->name,
                 'class' => $student->class,
-                'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa', // Jika tidak ada catatan, anggap Alfa
+                'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
                 'scan_time' => $attendanceRecord ? Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
             ];
         });
 
-        // 5. Kirim data yang sudah diolah ke halaman Vue
+        // 6. Kirim data ke Vue
         return Inertia::render('Attendance/Reports/Index', [
-            'reportData' => $reportData,
-            'filterDate' => $filterDate, // Kirim tanggal filter agar bisa ditampilkan di input
+            'reportData' => $reportData, // Ini sekarang adalah objek paginator
+            'filterDate' => $filterDate,
+            'filters' => $request->only(['search']),
         ]);
     }
 

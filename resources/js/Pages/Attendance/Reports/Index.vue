@@ -1,26 +1,29 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Pagination from '@/Components/Pagination.vue'; // <-- Import Paginasi
 import { Head, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
+import { debounce } from 'lodash';
 
-// Terima props dari controller
 const props = defineProps({
-    reportData: Array,
+    reportData: Object, // <-- reportData sekarang adalah objek paginator
     filterDate: String,
+    filters: Object,
 });
 
-// Buat state reaktif untuk input tanggal, diisi dengan tanggal dari controller
 const date = ref(props.filterDate);
+const search = ref(props.filters.search || ''); // <-- State untuk search
 
-// "Mata-mata" yang akan memuat ulang data saat tanggal di filter berubah
-watch(date, (newDate) => {
+// Watcher untuk filter tanggal dan search
+watch([date, search], debounce(([newDate, newSearch]) => {
     router.get(route('reports.attendance.index'), {
-        date: newDate // Kirim tanggal baru sebagai query parameter
+        date: newDate,
+        search: newSearch,
     }, {
-        preserveState: true, // Agar halaman tidak terasa 'flash' saat reload
-        replace: true,       // Ganti history state, bukan menambah baru
+        preserveState: true,
+        replace: true,
     });
-});
+}, 300));
 
 // Fungsi untuk menentukan warna badge status
 const statusClass = (status) => {
@@ -53,9 +56,15 @@ const updateStatus = (studentId, newStatus) => {
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         
-                        <div class="mb-4">
-                            <label for="filter_date" class="block text-sm font-medium text-gray-700">Pilih Tanggal Laporan:</label>
-                            <input v-model="date" type="date" id="filter_date" class="mt-1 block w-full md:w-1/4 border-gray-300 rounded-md shadow-sm">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label for="filter_date">Pilih Tanggal:</label>
+                                <input v-model="date" type="date" id="filter_date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="search">Cari Siswa:</label>
+                                <input v-model="search" type="text" id="search" placeholder="Cari nama atau NIS..." class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            </div>
                         </div>
 
                         <div class="overflow-x-auto">
@@ -96,7 +105,9 @@ const updateStatus = (studentId, newStatus) => {
                                 </tbody>
                             </table>
                         </div>
-
+                        <div class="mt-6">
+                            <Pagination :links="reportData.links" />
+                        </div>
                     </div>
                 </div>
             </div>
