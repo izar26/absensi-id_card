@@ -176,5 +176,28 @@ class StudentController extends Controller
         'message' => 'Sinkronisasi selesai.',
         'details' => $detailsMessage,
     ]);
+
+    
 }
+
+public function ping()
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'pong',
+        ], 200);
+    }
+
+    /**
+     * BARU: Endpoint untuk memvalidasi token dari header.
+     * Middleware 'SyncApiAuth' akan menangani validasi.
+     * Jika request bisa sampai ke method ini, berarti token valid.
+     */
+    public function validateToken()
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Token is valid.',
+        ], 200);
+    }
 }
