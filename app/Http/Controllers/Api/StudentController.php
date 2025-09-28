@@ -114,41 +114,68 @@ class StudentController extends Controller
     }
 
     public function sync(Request $request)
-    {
-        // 1. Validasi data yang masuk, sesuaikan dengan nama field dari Dapodik
-        $request->validate([
-            '*.peserta_didik_id' => 'required',
-            '*.nama' => 'required|string',
-            '*.nisn' => 'nullable|string',
-            '*.nama_rombel' => 'required|string',
-        ]);
+{
+    // 1. Validasi data masuk (sudah bagus)
+    $validator = Validator::make($request->all(), [
+        '*.peserta_didik_id' => 'required|string',
+        '*.nama' => 'required|string',
+        '*.nisn' => 'nullable|string',
+        '*.nama_rombel' => 'required|string',
+    ]);
 
-        $syncedCount = 0;
-        $dataFromDapodik = $request->all();
-
-        // 2. Loop melalui setiap data siswa yang dikirim
-        foreach ($dataFromDapodik as $siswaDapodik) {
-            
-            // Lanjutkan hanya jika NISN tidak kosong
-            if (!empty($siswaDapodik['nisn'])) {
-                Student::updateOrCreate(
-                    [
-                        'nis' => $siswaDapodik['nisn'] // Kunci unik untuk mencari
-                    ],
-                    [
-                        'name' => $siswaDapodik['nama'], // Data yang akan di-update atau dibuat
-                        'class' => $siswaDapodik['nama_rombel'],
-                    ]
-                );
-                $syncedCount++;
-            }
-        }
-
-        // 4. Kembalikan respons sukses
+    if ($validator->fails()) {
         return response()->json([
-            'message' => 'Sinkronisasi berhasil.',
-            'total_data_diterima' => count($dataFromDapodik),
-            'total_data_disinkronkan' => $syncedCount,
-        ]);
+            'success' => false,
+            'message' => 'Data yang dikirim tidak valid.',
+            'details' => $validator->errors()->first(),
+        ], 422);
     }
+
+    $dataFromDapodik = $request->all();
+    $totalDiterima = count($dataFromDapodik);
+    
+    // Inisialisasi penghitung
+    $createdCount = 0;
+    $updatedCount = 0;
+    $skippedCount = 0;
+
+    // 2. Loop melalui setiap data siswa
+    foreach ($dataFromDapodik as $siswaDapodik) {
+        // Lewati jika nisn kosong atau tidak ada
+        if (empty($siswaDapodik['nisn'])) {
+            $skippedCount++;
+            continue; // Lanjut ke siswa berikutnya
+        }
+        
+        // Gunakan peserta_didik_id sebagai kunci unik utama
+        $student = Student::updateOrCreate(
+            [
+                'peserta_didik_id' => $siswaDapodik['peserta_didik_id'] 
+            ],
+            [
+                'name'  => $siswaDapodik['nama'],
+                'nis'   => $siswaDapodik['nisn'],
+                'class' => $siswaDapodik['nama_rombel'],
+                // Tambahkan field lain jika ada
+                // 'gender' => $siswaDapodik['jenis_kelamin'],
+            ]
+        );
+
+        // Cek apakah model baru dibuat atau diupdate
+        if ($student->wasRecentlyCreated) {
+            $createdCount++;
+        } elseif ($student->wasChanged()) {
+            $updatedCount++;
+        }
+    }
+
+    // 3. Buat pesan detail yang dinamis
+    $detailsMessage = "Baru: {$createdCount}, Diperbarui: {$updatedCount}, Dilewati (tanpa NISN): {$skippedCount}.";
+
+    // 4. Kembalikan respons JSON yang detail
+    return response()->json([
+        'message' => 'Sinkronisasi selesai.',
+        'details' => $detailsMessage,
+    ]);
+}
 }
