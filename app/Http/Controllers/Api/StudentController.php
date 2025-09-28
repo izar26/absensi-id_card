@@ -134,45 +134,44 @@ class StudentController extends Controller
     $dataFromDapodik = $request->all();
     $totalDiterima = count($dataFromDapodik);
     
-    // Inisialisasi penghitung
     $createdCount = 0;
     $updatedCount = 0;
     $skippedCount = 0;
 
-    // 2. Loop melalui setiap data siswa
     foreach ($dataFromDapodik as $siswaDapodik) {
-        // Lewati jika nisn kosong atau tidak ada
         if (empty($siswaDapodik['nisn'])) {
             $skippedCount++;
-            continue; // Lanjut ke siswa berikutnya
+            continue;
         }
         
-        // Gunakan peserta_didik_id sebagai kunci unik utama
-        $student = Student::updateOrCreate(
-            [
-                'peserta_didik_id' => $siswaDapodik['peserta_didik_id'] 
-            ],
-            [
-                'name'  => $siswaDapodik['nama'],
-                'nis'   => $siswaDapodik['nisn'],
-                'class' => $siswaDapodik['nama_rombel'],
-                // Tambahkan field lain jika ada
-                // 'gender' => $siswaDapodik['jenis_kelamin'],
-            ]
-        );
+        // Data yang akan dimasukkan atau diperbarui
+        $studentData = [
+            'name'  => $siswaDapodik['nama'],
+            'nis'   => $siswaDapodik['nisn'],
+            'class' => $siswaDapodik['nama_rombel'],
+            'peserta_didik_id' => $siswaDapodik['peserta_didik_id'],
+        ];
 
-        // Cek apakah model baru dibuat atau diupdate
-        if ($student->wasRecentlyCreated) {
+        // Cari berdasarkan peserta_didik_id dulu, jika tidak ada, cari berdasarkan nis
+        $student = Student::where('peserta_didik_id', $siswaDapodik['peserta_didik_id'])
+                          ->orWhere('nis', $siswaDapodik['nisn'])
+                          ->first();
+
+        if ($student) {
+            // Jika siswa ditemukan, update datanya
+            $student->update($studentData);
+            if ($student->wasChanged()) {
+                $updatedCount++;
+            }
+        } else {
+            // Jika tidak ditemukan sama sekali, buat data baru
+            Student::create($studentData);
             $createdCount++;
-        } elseif ($student->wasChanged()) {
-            $updatedCount++;
         }
     }
 
-    // 3. Buat pesan detail yang dinamis
-    $detailsMessage = "Baru: {$createdCount}, Diperbarui: {$updatedCount}, Dilewati (tanpa NISN): {$skippedCount}.";
+    $detailsMessage = "Baru: {$createdCount}, Diperbarui: {$updatedCount}, Dilewati: {$skippedCount}.";
 
-    // 4. Kembalikan respons JSON yang detail
     return response()->json([
         'message' => 'Sinkronisasi selesai.',
         'details' => $detailsMessage,
