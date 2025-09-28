@@ -15,6 +15,7 @@ class AttendanceReportController extends Controller
      */
 public function index(Request $request)
     {
+        
         // 1. Ambil filter tanggal dan search
         $filterDate = $request->input('date', Carbon::today()->toDateString());
         
@@ -38,25 +39,25 @@ public function index(Request $request)
                                 ->keyBy('student_id');
 
         // 5. Gabungkan data dengan cara yang lebih aman untuk konsistensi
-        $reportData = $paginatedStudents->setCollection(
-            $paginatedStudents->getCollection()->map(function ($student) use ($attendances) {
-                $attendanceRecord = $attendances->get($student->id);
-                return [
-                    'id' => $student->id,
-                    'name' => $student->name,
-                    'class' => $student->class,
-                    'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
-                    'scan_time' => $attendanceRecord ? Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
-                ];
-            })
-        );
+$reportData = $paginatedStudents->setCollection(
+    $paginatedStudents->getCollection()->map(function ($student) use ($attendances) {
+        $attendanceRecord = $attendances->get($student->id);
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'class' => $student->class,
+            'status' => $attendanceRecord ? $attendanceRecord->status : 'Alfa',
+            'scan_time' => $attendanceRecord ? Carbon::parse($attendanceRecord->created_at)->format('H:i:s') : '-',
+        ];
+    })
+);
 
-        // 6. Kirim data ke Vue
-        return Inertia::render('Attendance/Reports/Index', [
-            'reportData' => $reportData,
-            'filterDate' => $filterDate,
-            'filters' => $request->only(['search']),
-        ]);
+// 6. Kirim data ke Vue
+return Inertia::render('Attendance/Reports/Index', [
+    'reportData' => $reportData,
+    'filterDate' => $filterDate,
+    'filters' => $request->only(['search']),
+]);
     }
 
     public function updateStatus(Request $request)
@@ -82,6 +83,8 @@ public function index(Request $request)
             'created_at' => Carbon::parse($request->date)->startOfDay(),
         ]);
     }
+
+    
 
     return to_route('reports.attendance.index', ['date' => $request->date])
         ->with('message', 'Status berhasil diperbarui.');
