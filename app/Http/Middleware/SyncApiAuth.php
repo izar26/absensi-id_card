@@ -19,7 +19,7 @@ class SyncApiAuth
     $token = $request->header('X-Sync-Token');
     
     // Bandingkan dengan token yang kita simpan (sebaiknya simpan di .env)
-    if ($token !== 'INI_KATA_SANDI_RAHASIA_ANDA_YANG_SANGAT_PANJANG') {
+    if ($token !== 'lNoD7qFg1LggLIO') {
         // Jika token salah, tolak akses
         abort(403, 'Unauthorized action.');
     }
